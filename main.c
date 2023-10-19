@@ -10,8 +10,17 @@ typedef struct square
     Rectangle info;
 } square;
 
+typedef struct line_point
+{
+    Vector2 start;
+    Vector2 end;
+} line_point;
+
 const int max_partitions = 3;
 Rectangle *rooms_arr;
+line_point *lp_arr;
+Vector2 lp_curr = (Vector2){-1, -1};
+Vector2 lp_prev = (Vector2){-1, -1};
 square *leaf_arr;
 int index = 0;
 
@@ -34,22 +43,31 @@ void PartitionCreate(short depth, square *leaf)
 
     if (depth > max_partitions)
     {
-        int random_width = GetRandomValue(40, 100);
-        int random_height = GetRandomValue(40, 100);
+        int random_width = GetRandomValue(80, 120);
+        int random_height = GetRandomValue(80, 120);
 
-        leaf_arr[index] = *leaf;
-        
-        if(random_width < leaf->info.width && random_height < leaf->info.height)
+        if (random_width < leaf->info.width && random_height < leaf->info.height)
         {
             Rectangle room = (Rectangle){GetRandomValue(leaf->info.x, leaf->info.x + leaf->info.width - random_width),
-                                        GetRandomValue(leaf->info.y, leaf->info.y + leaf->info.height - random_height),
-                                        random_width,
-                                        random_height
-                                        };
+                                         GetRandomValue(leaf->info.y, leaf->info.y + leaf->info.height - random_height),
+                                         random_width,
+                                         random_height};
+
+            if (lp_curr.x == -1 && lp_curr.y == -1)
+            {
+                lp_curr = (Vector2){room.x + room.width / 2, room.y + room.height / 2};
+            }
+            else
+            {
+                lp_prev = lp_curr;
+                lp_curr = (Vector2){room.x + room.width / 2, room.y + room.height / 2};
+                lp_arr[index - 1] = (line_point){lp_prev, lp_curr};
+            }
 
             rooms_arr[index] = room;
         }
 
+        leaf_arr[index] = *leaf;
 
         index++;
         return;
@@ -83,42 +101,51 @@ int main()
     Rectangle rooms[(int)pow(2, max_partitions + 1)];
     rooms_arr = rooms;
 
+    line_point line_points[(int)pow(2, max_partitions + 1) - 1];
+    lp_arr = line_points;
+
     square save_leaf[(int)pow(2, max_partitions + 1)];
     leaf_arr = save_leaf;
 
     Rectangle root = (Rectangle){0, 0, GetScreenWidth(), GetScreenHeight()};
     PartitionCreate(0, SquareCreate(root));
 
-    // short random_room_width[(int)pow(2, max_partitions + 1)];
-    // short random_room_height[(int)pow(2, max_partitions + 1)];
-    // short random_room_x_offset[(int)pow(2, max_partitions + 1)];
-    // short random_room_y_offset[(int)pow(2, max_partitions + 1)];
-
-    // for (int i = 0; i < (int)pow(2, max_partitions + 1); i++)
-    // {
-    //     random_room_width[i] = GetRandomValue(60, 100);
-    //     random_room_height[i] = GetRandomValue(60, 100);
-    //     random_room_x_offset[i] = GetRandomValue(save_leaf[i].info.x, save_leaf[i].info.width - random_room_width[i]);
-    //     random_room_y_offset[i] = GetRandomValue(save_leaf[i].info.y, save_leaf[i].info.height - random_room_height[i]);
-    // }
-
     while (!WindowShouldClose())
     {
         BeginDrawing();
         ClearBackground(BLACK);
 
+
+        for (int i = 0; i < (int)pow(2, max_partitions + 1) - 1; i++)
+        {
+            DrawLineEx(
+                (Vector2){
+                    lp_arr[i].start.x,
+                    lp_arr[i].start.y},
+                (Vector2){
+                    (lp_arr[i].start.x < lp_arr[i].end.x ? 5 : -5) + lp_arr[i].end.x,
+                    lp_arr[i].start.y},
+                10,
+                DARKBLUE);
+
+            DrawLineEx(
+                (Vector2){
+                    lp_arr[i].end.x,
+                    (lp_arr[i].start.y < lp_arr[i].end.y ? 5 : -5) + lp_arr[i].start.y},
+                (Vector2){
+                    lp_arr[i].end.x,
+                    (lp_arr[i].start.y < lp_arr[i].end.y ? 5 : -5) + lp_arr[i].end.y},
+                10,
+                DARKBLUE);
+        }
+
         for (int i = 0; i < (int)pow(2, max_partitions + 1); i++)
         {
-            DrawRectangleRec(save_leaf[i].info, BLACK);
-            DrawRectangleLinesEx(save_leaf[i].info, 1, WHITE);
+
+            // DrawRectangleRec(save_leaf[i].info, BLACK);
+            // DrawRectangleLinesEx(save_leaf[i].info, 1, WHITE);
 
             DrawRectangleRec(rooms[i], BLUE);
-
-            // DrawRectangle(save_leaf[i].info.x + random_room_x_offset[i],
-            //               save_leaf[i].info.y + random_room_y_offset[i],
-            //               random_room_width[i],
-            //               random_room_height[i],
-            //               BLUE);
         }
 
         EndDrawing();
