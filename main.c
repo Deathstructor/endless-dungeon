@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include "raylib.h"
@@ -16,13 +17,55 @@ typedef struct line_point
     Vector2 end;
 } line_point;
 
+typedef struct player
+{
+    Vector2 pos;
+    Color col;
+    int size;
+    bool exist;
+} player;
+
 const int max_partitions = 3;
 Rectangle *rooms_arr;
 line_point *lp_arr;
 Vector2 lp_curr = (Vector2){-1, -1};
 Vector2 lp_prev = (Vector2){-1, -1};
 square *leaf_arr;
-int index = 0;
+int arr_index = 0;
+
+player p;
+void PlayerDraw()
+{
+    if (!p.exist)
+    {
+        int rdm_spawn_room = GetRandomValue(0, (int)pow(2, max_partitions + 1));
+        Vector2 rdm_spawn_pos = (Vector2){GetRandomValue(rooms_arr[rdm_spawn_room].x,
+                                                         rooms_arr[rdm_spawn_room].x + rooms_arr[rdm_spawn_room].width - p.size),
+                                          GetRandomValue(rooms_arr[rdm_spawn_room].y,
+                                                         rooms_arr[rdm_spawn_room].y + rooms_arr[rdm_spawn_room].height - p.size)};
+
+        p.pos = rdm_spawn_pos;
+        p.size = 10;
+        p.col = RED;
+
+        if (rdm_spawn_pos.x >= 10 && rdm_spawn_pos.x <= GetScreenWidth() && rdm_spawn_pos.y >= 0 && rdm_spawn_pos.y <= GetScreenHeight())
+            p.exist = true;
+    }
+    else
+    {
+        if (IsKeyDown(KEY_A))
+            p.pos.x--;
+        if (IsKeyDown(KEY_D))
+            p.pos.x++;
+        if (IsKeyDown(KEY_W))
+            p.pos.y--;
+        if (IsKeyDown(KEY_S))
+            p.pos.y++;
+
+        DrawRectangle(p.pos.x, p.pos.y, p.size, p.size, p.col);
+        printf("X: %f, Y: %f\n", p.pos.x, p.pos.y);
+    }
+}
 
 square *SquareCreate(Rectangle value)
 {
@@ -61,15 +104,15 @@ void PartitionCreate(short depth, square *leaf)
             {
                 lp_prev = lp_curr;
                 lp_curr = (Vector2){room.x + room.width / 2, room.y + room.height / 2};
-                lp_arr[index - 1] = (line_point){lp_prev, lp_curr};
+                lp_arr[arr_index - 1] = (line_point){lp_prev, lp_curr};
             }
 
-            rooms_arr[index] = room;
+            rooms_arr[arr_index] = room;
         }
 
-        leaf_arr[index] = *leaf;
+        leaf_arr[arr_index] = *leaf;
 
-        index++;
+        arr_index++;
         return;
     }
 
@@ -115,7 +158,6 @@ int main()
         BeginDrawing();
         ClearBackground(BLACK);
 
-
         for (int i = 0; i < (int)pow(2, max_partitions + 1) - 1; i++)
         {
             DrawLineEx(
@@ -123,19 +165,19 @@ int main()
                     lp_arr[i].start.x,
                     lp_arr[i].start.y},
                 (Vector2){
-                    (lp_arr[i].start.x < lp_arr[i].end.x ? 5 : -5) + lp_arr[i].end.x,
+                    (lp_arr[i].start.x < lp_arr[i].end.x ? 7.5 : -7.5) + lp_arr[i].end.x,
                     lp_arr[i].start.y},
-                10,
+                15,
                 DARKBLUE);
 
             DrawLineEx(
                 (Vector2){
                     lp_arr[i].end.x,
-                    (lp_arr[i].start.y < lp_arr[i].end.y ? 5 : -5) + lp_arr[i].start.y},
+                    (lp_arr[i].start.y < lp_arr[i].end.y ? 7.5 : -7.5) + lp_arr[i].start.y},
                 (Vector2){
                     lp_arr[i].end.x,
-                    (lp_arr[i].start.y < lp_arr[i].end.y ? 5 : -5) + lp_arr[i].end.y},
-                10,
+                    (lp_arr[i].start.y < lp_arr[i].end.y ? 7.5 : -7.5) + lp_arr[i].end.y},
+                15,
                 DARKBLUE);
         }
 
@@ -147,6 +189,8 @@ int main()
 
             DrawRectangleRec(rooms[i], BLUE);
         }
+
+        PlayerDraw();
 
         EndDrawing();
     }
